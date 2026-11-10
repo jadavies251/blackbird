@@ -1,0 +1,44 @@
+name: 🔍 Username Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: lilocus
+        required: true
+        type: string
+      no_nsfw:
+        description: "Skip NSFW sites"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scan
+        run: |
+          FLAGS="--username ${{ inputs.username }} --json --csv"
+          if [ "${{ inputs.no_nsfw }}" = "true" ]; then
+            FLAGS="$FLAGS --no-nsfw"
+          fi
+          python blackbird.py $FLAGS || true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-${{ inputs.username }}-${{ github.run_number }}
+          path: results/
+          retention-days: 30
+          if-no-files-found: warn
